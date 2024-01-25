@@ -1,49 +1,58 @@
 import { Component } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
+
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  template: `
-    <div>
-      <a href="https://analogjs.org/" target="_blank">
-        <img alt="Analog Logo" class="logo analog" src="/analog.svg" />
-      </a>
-    </div>
-
-    <h2>Analog</h2>
-
-    <h3>The fullstack meta-framework for Angular!</h3>
-
-    <div class="card">
-      <button type="button" (click)="increment()">Count {{ count }}</button>
-    </div>
-
-    <p class="read-the-docs">
-      For guides on how to customize this project, visit the
-      <a href="https://analogjs.org" target="_blank">Analog documentation</a>
-    </p>
-  `,
-  styles: [
-    `
-      .logo {
-        will-change: filter;
-      }
-      .logo:hover {
-        filter: drop-shadow(0 0 2em #646cffaa);
-      }
-      .logo.angular:hover {
-        filter: drop-shadow(0 0 2em #42b883aa);
-      }
-      .read-the-docs {
-        color: #888;
-      }
-    `,
+  imports: [
+    FormsModule, // <--- import into the component
+    /* . . . */
   ],
+  template: `
+    <div class="w-full flex">
+      <div class="m-auto space-y-4 w-1/2">
+        <!-- Email Input Box -->
+        <div class="w-auto">
+          <input
+            type="text"
+            class="w-full"
+            [ngModel]="email"
+            (ngModelChange)="setEmail($event)"
+            placeholder="Enter your Email..."
+          />
+        </div>
+
+        <div>
+          <button (click)="logIn()" class="border px-4 w-full">Log In</button>
+        </div>
+      </div>
+    </div>
+  `,
+  styles: [],
 })
 export default class HomeComponent {
-  count = 0;
+  email: string = 'prince';
 
-  increment() {
-    this.count++;
+  constructor(private router: Router) { }
+
+  ngOnInit() {
+  }
+
+  logIn() {
+
+    return this.router.navigateByUrl("/inbox/customer/1"); 
+
+    fetch('http:localhost:8080/getUser', {
+      method: 'POST',
+      body: JSON.stringify({
+        email: this.email,
+      }),
+    });
+  }
+
+  setEmail(event: string) {
+    this.email = event;
   }
 }
