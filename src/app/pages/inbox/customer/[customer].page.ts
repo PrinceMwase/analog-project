@@ -1,11 +1,14 @@
 import { Component } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { CommonModule, NgOptimizedImage } from '@angular/common';
 import { ChatIconComponent } from '../../../../components/icons/ChatIcon';
 import { AddIconComponent } from '../../../../components/icons/AddIcon';
 import { CallIconComponent } from '../../../../components/icons/CallIcon';
 import * as moment from 'moment';
+import { ChatMessagesComponent } from '../../../../components/inbox/ChatMessages';
+import { Contact, CustomerList } from '../../../../interfaces/ICustomer';
 
-type ContactType = {
+export type ContactType = {
   name: string;
   contact: string;
   imageUrl: string;
@@ -20,6 +23,7 @@ type ContactType = {
     NgOptimizedImage,
     AddIconComponent,
     CallIconComponent,
+    ChatMessagesComponent,
   ],
   template: `
     <div class="flex min-w-full h-screen absolute top-0 bg-white text-gray-700">
@@ -32,14 +36,14 @@ type ContactType = {
           >
             <img
               class="rounded-full"
-              [ngSrc]="contact.imageUrl"
+              [ngSrc]="contact.avatar ?? getRandomImageUrl() "
               width="20"
               height="20"
             />
             <div class="ml-2 grow text-left truncate">
-              {{ contact.name }}
+              {{ contact.email }}
             </div>
-            <div *ngIf="contact.unReadMessage">
+            <div *ngIf="true">
               <span>
                 <chat-icon></chat-icon>
               </span>
@@ -64,24 +68,26 @@ type ContactType = {
         </div>
 
         <!-- Message Contaier -->
-        <div class="grow px-2 divide-y-2 max-h-full overflow-auto">
-          <div
-            class="flex justify-between py-4"
-            *ngFor="let conversation of conversations"
-          >
-            <div class="flex grow space-x-2">
-              <img
-                class="rounded-full"
-                [ngSrc]="conversation.contact.imageUrl"
-                width="20"
-                height="20"
-              />
-              <div class="truncate">{{ conversation.initialMessage }}</div>
-            </div>
-            <div class="truncate text-sm font-thin text-gray-400">
-              {{ conversation.date }}
-            </div>
-          </div>
+        <app-chat-messages
+        *ngIf="selectedIndex === 0"
+          class="grow px-2 divide-y-2 max-h-full overflow-auto"
+          [conversations]="conversations"
+        ></app-chat-messages>
+
+        <!-- emails -->
+        <div
+        *ngIf="selectedIndex === 1"
+        class="grow px-2 divide-y-2 max-h-full overflow-auto"
+        >
+
+        </div>
+
+        <!-- VOiece mails -->
+        <div
+        *ngIf="selectedIndex === 2"
+        class="grow px-2 divide-y-2 max-h-full overflow-auto"
+        >
+
         </div>
 
         <!-- Footer -->
@@ -105,38 +111,20 @@ type ContactType = {
   `,
 })
 export default class CustomerPage {
-  contacts: ContactType[] = [
-    {
-      name: 'prince Mwase',
-      contact: '+265884652513',
-      imageUrl: this.getRandomImageUrl(),
-      unReadMessage: false,
-    },
-    {
-      name: 'prince Mwase',
-      contact: '+265884652513',
-      imageUrl: this.getRandomImageUrl(),
-      unReadMessage: false,
-    },
-    {
-      name: 'prince Mwase',
-      contact: '+265884652513',
-      imageUrl: this.getRandomImageUrl(),
-      unReadMessage: true,
-    },
-    {
-      name: 'prince Mwase',
-      contact: '+265884652513',
-      imageUrl: this.getRandomImageUrl(),
-      unReadMessage: false,
-    },
-    {
-      name: 'prince Mwase',
-      contact: '+265884652513',
-      imageUrl: this.getRandomImageUrl(),
-      unReadMessage: false,
-    },
-  ];
+  contacts: Contact[] = [];
+
+  constructor(private httpClient: HttpClient) {}
+
+  ngOnInit(): void {
+    // Make an HTTP request to your API endpoint
+    const req = this.httpClient.get<any>('http://localhost:8080/contacts');
+
+    req.subscribe({
+      next: (value: CustomerList) => {
+        this.contacts = value.data;
+      },
+    });
+  }
 
   conversations: {
     contact: ContactType;
@@ -152,193 +140,6 @@ export default class CustomerPage {
         unReadMessage: false,
       },
       initialMessage: 'The Mercedes Offer: can we meet in the morning?',
-      date: moment(new Date()).fromNow(),
-      open: true,
-    },
-    {
-      contact: {
-        name: 'prince Mwase',
-        contact: '+265884652513',
-        imageUrl: this.getRandomImageUrl(),
-        unReadMessage: false,
-      },
-      initialMessage: 'The Mercedes Offer',
-      date: moment(new Date()).fromNow(),
-      open: true,
-    },
-    {
-      contact: {
-        name: 'prince Mwase',
-        contact: '+265884652513',
-        imageUrl: this.getRandomImageUrl(),
-        unReadMessage: false,
-      },
-      initialMessage: 'The Mercedes Offer',
-      date: moment(new Date()).fromNow(),
-      open: true,
-    },
-    {
-      contact: {
-        name: 'prince Mwase',
-        contact: '+265884652513',
-        imageUrl: this.getRandomImageUrl(),
-        unReadMessage: false,
-      },
-      initialMessage: 'The Mercedes Offer',
-      date: moment(new Date()).fromNow(),
-      open: true,
-    },
-    {
-      contact: {
-        name: 'prince Mwase',
-        contact: '+265884652513',
-        imageUrl: this.getRandomImageUrl(),
-        unReadMessage: false,
-      },
-      initialMessage: 'The Mercedes Offer',
-      date: moment(new Date()).fromNow(),
-      open: true,
-    },
-    {
-      contact: {
-        name: 'prince Mwase',
-        contact: '+265884652513',
-        imageUrl: this.getRandomImageUrl(),
-        unReadMessage: false,
-      },
-      initialMessage: 'The Mercedes Offer',
-      date: moment(new Date()).fromNow(),
-      open: true,
-    },
-    {
-      contact: {
-        name: 'prince Mwase',
-        contact: '+265884652513',
-        imageUrl: this.getRandomImageUrl(),
-        unReadMessage: false,
-      },
-      initialMessage: 'The Mercedes Offer',
-      date: moment(new Date()).fromNow(),
-      open: true,
-    },
-    {
-      contact: {
-        name: 'prince Mwase',
-        contact: '+265884652513',
-        imageUrl: this.getRandomImageUrl(),
-        unReadMessage: false,
-      },
-      initialMessage: 'The Mercedes Offer',
-      date: moment(new Date()).fromNow(),
-      open: true,
-    },
-    {
-      contact: {
-        name: 'prince Mwase',
-        contact: '+265884652513',
-        imageUrl: this.getRandomImageUrl(),
-        unReadMessage: false,
-      },
-      initialMessage: 'The Mercedes Offer',
-      date: moment(new Date()).fromNow(),
-      open: true,
-    },
-    {
-      contact: {
-        name: 'prince Mwase',
-        contact: '+265884652513',
-        imageUrl: this.getRandomImageUrl(),
-        unReadMessage: false,
-      },
-      initialMessage: 'The Mercedes Offer',
-      date: moment(new Date()).fromNow(),
-      open: true,
-    },
-    {
-      contact: {
-        name: 'prince Mwase',
-        contact: '+265884652513',
-        imageUrl: this.getRandomImageUrl(),
-        unReadMessage: false,
-      },
-      initialMessage: 'The Mercedes Offer',
-      date: moment(new Date()).fromNow(),
-      open: true,
-    },
-    {
-      contact: {
-        name: 'prince Mwase',
-        contact: '+265884652513',
-        imageUrl: this.getRandomImageUrl(),
-        unReadMessage: false,
-      },
-      initialMessage: 'The Mercedes Offer',
-      date: moment(new Date()).fromNow(),
-      open: true,
-    },
-    {
-      contact: {
-        name: 'prince Mwase',
-        contact: '+265884652513',
-        imageUrl: this.getRandomImageUrl(),
-        unReadMessage: false,
-      },
-      initialMessage: 'The Mercedes Offer',
-      date: moment(new Date()).fromNow(),
-      open: true,
-    },
-    {
-      contact: {
-        name: 'prince Mwase',
-        contact: '+265884652513',
-        imageUrl: this.getRandomImageUrl(),
-        unReadMessage: false,
-      },
-      initialMessage: 'The Mercedes Offer',
-      date: moment(new Date()).fromNow(),
-      open: true,
-    },
-    {
-      contact: {
-        name: 'prince Mwase',
-        contact: '+265884652513',
-        imageUrl: this.getRandomImageUrl(),
-        unReadMessage: false,
-      },
-      initialMessage: 'The Mercedes Offer',
-      date: moment(new Date()).fromNow(),
-      open: true,
-    },
-    {
-      contact: {
-        name: 'prince Mwase',
-        contact: '+265884652513',
-        imageUrl: this.getRandomImageUrl(),
-        unReadMessage: false,
-      },
-      initialMessage: 'The Mercedes Offer',
-      date: moment(new Date()).fromNow(),
-      open: true,
-    },
-    {
-      contact: {
-        name: 'prince Mwase',
-        contact: '+265884652513',
-        imageUrl: this.getRandomImageUrl(),
-        unReadMessage: false,
-      },
-      initialMessage: 'The Mercedes Offer',
-      date: moment(new Date()).fromNow(),
-      open: true,
-    },
-    {
-      contact: {
-        name: 'prince Mwase',
-        contact: '+265884652513',
-        imageUrl: this.getRandomImageUrl(),
-        unReadMessage: false,
-      },
-      initialMessage: 'The Mercedes Offer',
       date: moment(new Date()).fromNow(),
       open: true,
     },
