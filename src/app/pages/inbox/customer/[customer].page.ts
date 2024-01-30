@@ -7,6 +7,8 @@ import { CallIconComponent } from '../../../../components/icons/CallIcon';
 import * as moment from 'moment';
 import { ChatMessagesComponent } from '../../../../components/inbox/ChatMessages';
 import { Contact, CustomerList } from '../../../../interfaces/ICustomer';
+import { ConversationList } from '../../../../interfaces/IConversation';
+import { ReplyMessagesComponent } from '../../../../components/inbox/ReplyMessages';
 
 export type ContactType = {
   name: string;
@@ -24,6 +26,7 @@ export type ContactType = {
     AddIconComponent,
     CallIconComponent,
     ChatMessagesComponent,
+    ReplyMessagesComponent,
   ],
   template: `
     <div class="flex min-w-full h-screen absolute top-0 bg-white text-gray-700">
@@ -36,7 +39,7 @@ export type ContactType = {
           >
             <img
               class="rounded-full"
-              [ngSrc]="contact.avatar ?? getRandomImageUrl() "
+              [ngSrc]="contact.avatar ?? getRandomImageUrl()"
               width="20"
               height="20"
             />
@@ -67,28 +70,32 @@ export type ContactType = {
           </div>
         </div>
 
-        <!-- Message Contaier -->
-        <app-chat-messages
-        *ngIf="selectedIndex === 0"
-          class="grow px-2 divide-y-2 max-h-full overflow-auto"
-          [conversations]="conversations"
-        ></app-chat-messages>
+        <ng-container *ngIf="chat.length > 0">
+          <!-- Reply Messages Container -->
+          <app-reply-messages class="grow max-h-full overflow-auto" [conversationId]="chat[0]"></app-reply-messages>
+        </ng-container>
 
-        <!-- emails -->
-        <div
-        *ngIf="selectedIndex === 1"
-        class="grow px-2 divide-y-2 max-h-full overflow-auto"
-        >
+        <ng-container *ngIf="chat.length === 0 && selectedIndex !== null">
+          <!-- source Messages Container -->
+          <app-chat-messages
+            *ngIf="selectedIndex === 0"
+            class="grow px-2 divide-y-2 max-h-full overflow-auto"
+            (enterChatEvent)="addChat($event)"
+            [conversationsList]="conversationsList"
+          ></app-chat-messages>
 
-        </div>
+          <!-- emails -->
+          <div
+            *ngIf="selectedIndex === 1"
+            class="grow px-2 divide-y-2 max-h-full overflow-auto"
+          ></div>
 
-        <!-- VOiece mails -->
-        <div
-        *ngIf="selectedIndex === 2"
-        class="grow px-2 divide-y-2 max-h-full overflow-auto"
-        >
-
-        </div>
+          <!-- Voice mails -->
+          <div
+            *ngIf="selectedIndex === 2"
+            class="grow px-2 divide-y-2 max-h-full overflow-auto"
+          ></div>
+        </ng-container>
 
         <!-- Footer -->
         <div class="flex p-4 justify-end space-x-2 text-white">
@@ -112,16 +119,37 @@ export type ContactType = {
 })
 export default class CustomerPage {
   contacts: Contact[] = [];
+  conversationsList: ConversationList = {
+    conversations: [],
+  };
+  chat: string[] = [];
+
+  addChat(chatId: string) {
+    this.chat = [];
+
+    this.chat.push(chatId);
+  }
 
   constructor(private httpClient: HttpClient) {}
 
   ngOnInit(): void {
     // Make an HTTP request to your API endpoint
-    const req = this.httpClient.get<any>('http://localhost:8080/contacts');
+    const reqCustomers = this.httpClient.get<any>(
+      'http://localhost:8080/contacts'
+    );
+    const reqConversations = this.httpClient.get<any>(
+      'http://localhost:8080/getAdminConversations'
+    );
 
-    req.subscribe({
+    reqCustomers.subscribe({
       next: (value: CustomerList) => {
         this.contacts = value.data;
+      },
+    });
+
+    reqConversations.subscribe({
+      next: (value: ConversationList) => {
+        this.conversationsList = value;
       },
     });
   }
@@ -149,6 +177,7 @@ export default class CustomerPage {
   selectedIndex: number | null = null;
 
   selectTab(index: number): void {
+    this.chat = [];
     this.selectedIndex = index;
   }
   getRandomImageUrl() {
