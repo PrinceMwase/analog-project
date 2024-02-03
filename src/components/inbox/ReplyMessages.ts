@@ -1,14 +1,17 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule, NgOptimizedImage } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
+import { FormsModule, NgForm } from '@angular/forms';
+import { Router } from '@angular/router';
 
 @Component({
-  imports: [CommonModule, NgOptimizedImage],
+  imports: [CommonModule, NgOptimizedImage, FormsModule],
   standalone: true,
   selector: 'app-reply-messages',
   template: `
-    <div>
-      <div>
+    <div class="flex flex-col min-h-full relative">
+      <!-- First Message -->
+      <div class="sticky top-0 bg-gray-100/90 px-2">
         <div class="flex grow space-x-2">
           <img
             class="rounded-full"
@@ -21,51 +24,69 @@ import { HttpClient } from '@angular/common/http';
             [innerHTML]="thisConversation.source.body"
           ></div>
         </div>
+
         <div class="truncate text-sm font-thin text-gray-400">
           {{ getDate(thisConversation.created_at) }}
         </div>
       </div>
 
-      <div
-        class="flex px-2 space-y-2"
-        *ngFor="
-          let conversation of thisConversation.conversation_parts
-            .conversation_parts
-        "
-      >
-        <div class="flex items-start space-y-2 gap-2.5">
-          <img
-            class="w-8 h-8 rounded-full"
-            [ngSrc]="getRandomImageUrl()"
-            width="20"
-            height="20"
-            alt="Jese image"
-          />
-          <div
-            class="flex flex-col w-full max-w-[320px] leading-1.5 p-4  bg-gray-100 rounded-e-xl rounded-es-xl dark:bg-gray-700"
-          >
-            <div class="flex items-center space-x-2 rtl:space-x-reverse">
+      <!-- Chats -->
+      <div class="grow">
+        <span>replies</span>
+        <div
+          class="flex px-2 space-y-2"
+          *ngFor="
+            let conversation of thisConversation.conversation_parts
+              .conversation_parts
+          "
+        >
+          <div class="flex items-start space-y-2 gap-2.5">
+            <img
+              class="w-8 h-8 rounded-full"
+              [ngSrc]="getRandomImageUrl()"
+              width="20"
+              height="20"
+              alt="Jese image"
+            />
+            <div
+              class="flex flex-col w-full max-w-[320px] leading-1.5 p-4  bg-gray-100 rounded-e-xl rounded-es-xl dark:bg-gray-700"
+            >
+              <div class="flex items-center space-x-2 rtl:space-x-reverse">
+                <span
+                  class="text-sm font-semibold text-gray-900 dark:text-white"
+                  >{{ conversation.author.name ? conversation.author.name.split(' ')[0] : conversation.author.email.split('@')[0] }}</span
+                >
+              </div>
+              <p
+                class="text-sm font-normal py-2.5 text-gray-900 dark:text-white"
+                [innerHTML]="conversation.body"
+              ></p>
               <span
-                class="text-sm font-semibold text-gray-900 dark:text-white"
-                >{{ conversation.author.name.split(' ')[0] }}</span
-              >
-              <span
-                class="text-sm font-normal text-gray-500 dark:text-gray-400"
-              >
-                11:46</span
+                class="text-xs font-normal text-gray-500 dark:text-gray-400"
+                >{{ getDate(conversation.created_at) }}</span
               >
             </div>
-            <p
-              class="text-sm font-normal py-2.5 text-gray-900 dark:text-white"
-              [innerHTML]="conversation.body"
-            ></p>
-            <span
-              class="text-xs font-normal text-gray-500 dark:text-gray-400"
-              >{{ getDate(conversation.created_at) }}</span
-            >
           </div>
-
         </div>
+      </div>
+
+      <!-- reply and send message -->
+      <div class="sticky bottom-0 px-2">
+        <form #f="ngForm" (ngSubmit)="onSubmit(f)" novalidate>
+          <div class="flex space-x-2">
+            <input
+              type="text"
+              ngModel
+              required
+              name="messageBody"
+              placeholder="reply to message..."
+              #messageBody="ngModel"
+              class="grow w-full border-b-2 border-black bg-white"
+            />
+
+            <button class="font-bold">send</button>
+          </div>
+        </form>
       </div>
     </div>
   `,
@@ -132,7 +153,7 @@ export class ReplyMessagesComponent {
     },
   };
 
-  constructor(private httpClient: HttpClient) {}
+  constructor(private httpClient: HttpClient, private router: Router) {}
   ngOnInit(): void {
     // Make an HTTP request to your API endpoint
     const reqSingleConversation = this.httpClient.get<any>(
@@ -146,6 +167,31 @@ export class ReplyMessagesComponent {
     });
   }
 
+  onSubmit(f: NgForm) {
+
+    if (isNaN(parseInt(this.thisConversation.id)) && f.valid) {
+      return false;
+    }
+
+    const reqReplyMessage = this.httpClient.post<any>(
+      'http://localhost:8080/adminReplyToConversation',
+      {
+        ...f.value,
+        attachmentLink: 'i',
+        messageId: this.thisConversation.id
+      }
+    );
+
+    reqReplyMessage.subscribe({
+      next: (value: ConversationPart) => {
+        this.thisConversation.conversation_parts.conversation_parts.push(
+          value
+        )
+      },
+    });
+
+    return this.router.navigateByUrl("/inbox/customer/1"); 
+  }
   getRandomImageUrl() {
     return 'https://picsum.photos/20';
   }
