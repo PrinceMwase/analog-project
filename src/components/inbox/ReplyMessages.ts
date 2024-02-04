@@ -3,11 +3,22 @@ import { CommonModule, NgOptimizedImage } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule, NgForm } from '@angular/forms';
 import { Router } from '@angular/router';
+import { RxStompService } from '../../../src/app/rx-stomp.service';
+import { Message } from '@stomp/stompjs';
+
+import { rxStompServiceFactory } from '../../../src/app/rx-stomp-service-factory';
+import { Subscription } from 'rxjs';
 
 @Component({
   imports: [CommonModule, NgOptimizedImage, FormsModule],
   standalone: true,
   selector: 'app-reply-messages',
+  providers: [
+    {
+      provide: RxStompService,
+      useFactory: rxStompServiceFactory,
+    },
+  ],
   template: `
     <div class="flex flex-col min-h-full relative">
       <!-- First Message -->
@@ -39,8 +50,14 @@ import { Router } from '@angular/router';
             let conversation of thisConversation.conversation_parts
               .conversation_parts
           "
+          [ngClass]="{ 'justify-end': conversation.author.type === 'admin' }"
         >
-          <div class="flex items-start space-y-2 gap-2.5">
+          <div
+            class="flex items-start space-y-2 gap-2.5"
+            [ngClass]="{
+              'flex-row-reverse': conversation.author.type === 'admin'
+            }"
+          >
             <img
               class="w-8 h-8 rounded-full"
               [ngSrc]="getRandomImageUrl()"
@@ -49,12 +66,22 @@ import { Router } from '@angular/router';
               alt="Jese image"
             />
             <div
-              class="flex flex-col w-full max-w-[320px] leading-1.5 p-4  bg-gray-100 rounded-e-xl rounded-es-xl dark:bg-gray-700"
+              class="flex flex-col w-full max-w-[320px] leading-1.5 p-4  bg-gray-100 dark:bg-gray-700"
+              [ngClass]="{
+                'rounded-s-xl rounded-se-xl':
+                  conversation.author.type === 'admin',
+                'rounded-e-xl rounded-es-xl':
+                  conversation.author.type !== 'admin'
+              }"
             >
               <div class="flex items-center space-x-2 rtl:space-x-reverse">
                 <span
                   class="text-sm font-semibold text-gray-900 dark:text-white"
-                  >{{ conversation.author.name ? conversation.author.name.split(' ')[0] : conversation.author.email.split('@')[0] }}</span
+                  >{{
+                    conversation.author.name
+                      ? conversation.author.name.split(' ')[0]
+                      : conversation.author.email.split('@')[0]
+                  }}</span
                 >
               </div>
               <p
@@ -153,8 +180,22 @@ export class ReplyMessagesComponent {
     },
   };
 
-  constructor(private httpClient: HttpClient, private router: Router) {}
+  // @ts-ignore, to suppress warning related to being undefined
+  private topicSubscription: Subscription;
+
+  constructor(
+    private httpClient: HttpClient,
+    private router: Router,
+    private stomp: RxStompService
+  ) {}
   ngOnInit(): void {
+    // watching for received messages
+    this.topicSubscription = this.stomp
+      .watch('/topic/reply')
+      .subscribe((message: any) => {
+        console.log(message);
+      });
+
     // Make an HTTP request to your API endpoint
     const reqSingleConversation = this.httpClient.get<any>(
       `http://localhost:8080/getAdminConversation?id=${this.conversationId}`
@@ -167,8 +208,12 @@ export class ReplyMessagesComponent {
     });
   }
 
-  onSubmit(f: NgForm) {
+  // stop the watch
+  ngOnDestroy() {
+    this.topicSubscription.unsubscribe();
+  }
 
+  onSubmit(f: NgForm) {
     if (isNaN(parseInt(this.thisConversation.id)) && f.valid) {
       return false;
     }
@@ -178,19 +223,17 @@ export class ReplyMessagesComponent {
       {
         ...f.value,
         attachmentLink: 'i',
-        messageId: this.thisConversation.id
+        messageId: this.thisConversation.id,
       }
     );
 
     reqReplyMessage.subscribe({
       next: (value: ConversationPart) => {
-        this.thisConversation.conversation_parts.conversation_parts.push(
-          value
-        )
+        this.thisConversation.conversation_parts.conversation_parts.push(value);
       },
     });
 
-    return this.router.navigateByUrl("/inbox/customer/1"); 
+    return this.router.navigateByUrl('/inbox/customer/1');
   }
   getRandomImageUrl() {
     return 'https://picsum.photos/20';
