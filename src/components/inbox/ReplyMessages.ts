@@ -1,4 +1,12 @@
-import { Component, Input } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  Component,
+  ElementRef,
+  Input,
+  OnInit,
+  ViewChild,
+} from '@angular/core';
 import { CommonModule, NgOptimizedImage } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule, NgForm } from '@angular/forms';
@@ -7,7 +15,7 @@ import { RxStompService } from '../../../src/app/rx-stomp.service';
 import { Message } from '@stomp/stompjs';
 
 import { rxStompServiceFactory } from '../../../src/app/rx-stomp-service-factory';
-import { Subscription } from 'rxjs';
+import { Subscription, mergeMap } from 'rxjs';
 
 @Component({
   imports: [CommonModule, NgOptimizedImage, FormsModule],
@@ -19,8 +27,9 @@ import { Subscription } from 'rxjs';
       useFactory: rxStompServiceFactory,
     },
   ],
+  changeDetection: ChangeDetectionStrategy.Default,
   template: `
-    <div class="flex flex-col min-h-full relative">
+    <div class="flex flex-col min-h-full relative overflow-auto">
       <!-- First Message -->
       <div class="sticky top-0 bg-gray-100/90 px-2">
         <div class="flex grow space-x-2">
@@ -42,13 +51,13 @@ import { Subscription } from 'rxjs';
       </div>
 
       <!-- Chats -->
-      <div class="grow">
+      <div class="grow ">
         <span>replies</span>
         <div
           class="flex px-2 space-y-2"
           *ngFor="
-            let conversation of thisConversation.conversation_parts
-              .conversation_parts
+            let conversation of conversationParts;
+            trackBy: trackConversation
           "
           [ngClass]="{ 'justify-end': conversation.author.type === 'admin' }"
         >
@@ -119,7 +128,7 @@ import { Subscription } from 'rxjs';
     </div>
   `,
 })
-export class ReplyMessagesComponent {
+export class ReplyMessagesComponent implements OnInit {
   @Input() conversationId: string = ''; // Adjust the type based on your data structure
   thisConversation: SingleConversation = {
     type: '',
@@ -180,6 +189,7 @@ export class ReplyMessagesComponent {
       total_count: 0,
     },
   };
+  conversationParts: ConversationPart[] = [];
 
   // @ts-ignore, to suppress warning related to being undefined
   private topicSubscription: Subscription;
@@ -187,26 +197,49 @@ export class ReplyMessagesComponent {
   constructor(
     private httpClient: HttpClient,
     private router: Router,
-    private stomp: RxStompService
+    private stomp: RxStompService,
+    private cdr: ChangeDetectorRef
   ) {}
   ngOnInit(): void {
     // watching for received messages
-    this.topicSubscription = this.stomp
-      .watch('/topic/reply')
-      .subscribe((message: any) => {
-        console.log(message);
-      });
 
     // Make an HTTP request to your API endpoint
     const reqSingleConversation = this.httpClient.get<any>(
       `http://localhost:8080/getAdminConversation?id=${this.conversationId}`
     );
 
-    reqSingleConversation.subscribe({
-      next: (value: SingleConversation) => {
-        this.thisConversation = value;
-      },
-    });
+    reqSingleConversation
+      .pipe(
+        mergeMap((value: SingleConversation) => {
+          // initialize current conversation
+          this.thisConversation = value;
+          this.conversationParts = value.conversation_parts.conversation_parts;
+
+          // subscribe to topic and update conversation on message receive
+          return this.stomp.watch(
+            `/secure/reply/${this.thisConversation.source.id}`
+          );
+        })
+      )
+      .subscribe((message: any) => {
+        // Parse Message object
+        const newConversationUpdate: SingleConversation = JSON.parse(
+          message.body
+        ).item;
+
+        // Update Conversation part
+        this.conversationParts = [
+          ...this.conversationParts,
+          ...newConversationUpdate.conversation_parts.conversation_parts,
+        ];
+        // Trigger change detection manually
+        this.cdr.detectChanges();
+      });
+  }
+
+  // Track function avoids re-rendering 
+  trackConversation(index: any, conversation: any) {
+    return conversation.id;
   }
 
   // stop the watch
@@ -230,7 +263,7 @@ export class ReplyMessagesComponent {
 
     reqReplyMessage.subscribe({
       next: (value: ConversationPart) => {
-        this.thisConversation.conversation_parts.conversation_parts.push(value);
+        this.conversationParts.push(value);
       },
     });
 
