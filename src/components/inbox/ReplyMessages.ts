@@ -55,7 +55,8 @@ import { Subscription } from 'rxjs';
           <div
             class="flex items-start space-y-2 gap-2.5"
             [ngClass]="{
-              'flex-row-reverse': conversation.author.type === 'admin'
+              'flex-row-reverse': conversation.author.type === 'admin',
+              'items-end': conversation.author.type === 'admin'
             }"
           >
             <img

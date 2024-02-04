@@ -12,7 +12,7 @@ interface Pages {
   total_pages: number;
 }
 
-interface Conversation {
+export interface Conversation {
   type: 'conversation';
   id: string;
   created_at: number;

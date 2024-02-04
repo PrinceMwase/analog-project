@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, EventEmitter, Output } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { CommonModule, NgOptimizedImage } from '@angular/common';
 import { ChatIconComponent } from '../../../../components/icons/ChatIcon';
@@ -32,10 +32,12 @@ export type ContactType = {
     <div class="flex min-w-full h-screen absolute top-0 bg-white text-gray-700">
       <div class="basis-1/6 border min-h-full">
         <!-- Contacts Container -->
-        <div class="max-h-full divide-y-2 overflow-auto">
+        <div class="max-h-full overflow-auto">
           <div
-            class="flex justify-between align-middle p-4"
+            class="flex justify-between align-middle p-4 hover:bg-slate-400 cursor-pointer transition-all duration-150"
             *ngFor="let contact of contacts"
+            [ngClass]="{'bg-slate-400': selectedContact === contact}"
+            (click) = "selectContact(contact)"
           >
             <img
               class="rounded-full"
@@ -82,6 +84,7 @@ export type ContactType = {
             class="grow px-2 divide-y-2 max-h-full overflow-auto"
             (enterChatEvent)="addChat($event)"
             [conversationsList]="conversationsList"
+            [selectedContact]="selectedContact"
           ></app-chat-messages>
 
           <!-- emails -->
@@ -119,6 +122,10 @@ export type ContactType = {
 })
 export default class CustomerPage {
   contacts: Contact[] = [];
+
+  @Output() selectContactEvent = new EventEmitter<Contact>();
+
+  selectedContact?: Contact ;
   conversationsList: ConversationList = {
     conversations: [],
   };
@@ -128,6 +135,12 @@ export default class CustomerPage {
     this.chat = [];
 
     this.chat.push(chatId);
+  }
+
+  selectContact(contact: Contact){
+    console.log(contact);
+    
+    this.selectedContact = contact
   }
 
   constructor(private httpClient: HttpClient) {}
