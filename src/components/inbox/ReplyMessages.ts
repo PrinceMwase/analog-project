@@ -16,9 +16,11 @@ import { Message } from '@stomp/stompjs';
 
 import { rxStompServiceFactory } from '../../../src/app/rx-stomp-service-factory';
 import { Subscription, mergeMap } from 'rxjs';
+import { SendIconComponent } from '../icons/SendIcon';
+import { ToastrService } from 'ngx-toastr';
 
 @Component({
-  imports: [CommonModule, NgOptimizedImage, FormsModule],
+  imports: [CommonModule, NgOptimizedImage, FormsModule, SendIconComponent],
   standalone: true,
   selector: 'app-reply-messages',
   providers: [
@@ -29,7 +31,7 @@ import { Subscription, mergeMap } from 'rxjs';
   ],
   changeDetection: ChangeDetectionStrategy.Default,
   template: `
-    <div class="flex flex-col min-h-full relative overflow-auto">
+    <div class="flex flex-col min-h-full relative">
       <!-- First Message -->
       <div class="sticky top-0 bg-gray-100/90 px-2">
         <div class="flex grow space-x-2">
@@ -121,7 +123,7 @@ import { Subscription, mergeMap } from 'rxjs';
               class="grow w-full border-b-2 border-black bg-white"
             />
 
-            <button class="font-bold">send</button>
+            <button class="font-bold"><send-icon></send-icon> </button>
           </div>
         </form>
       </div>
@@ -198,7 +200,8 @@ export class ReplyMessagesComponent implements OnInit {
     private httpClient: HttpClient,
     private router: Router,
     private stomp: RxStompService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private toastr: ToastrService
   ) {}
   ngOnInit(): void {
     // watching for received messages
@@ -233,6 +236,7 @@ export class ReplyMessagesComponent implements OnInit {
           ...newConversationUpdate.conversation_parts.conversation_parts,
         ];
         // Trigger change detection manually
+        this.showNewMessage();
         this.cdr.detectChanges();
       });
   }
@@ -240,6 +244,16 @@ export class ReplyMessagesComponent implements OnInit {
   // Track function avoids re-rendering 
   trackConversation(index: any, conversation: any) {
     return conversation.id;
+  }
+
+
+  showNewMessage() {
+    this.toastr.success('New Message', 'Notification', {
+      tapToDismiss: false,
+      enableHtml: true,
+      closeButton:true,
+
+    });
   }
 
   // stop the watch

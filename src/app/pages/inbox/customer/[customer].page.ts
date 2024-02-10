@@ -31,7 +31,7 @@ export type ContactType = {
   template: `
     <div class="flex min-w-full h-screen absolute top-0 bg-white text-gray-700">
       <div class="basis-1/6 border min-h-full">
-        <!-- Contacts Container -->
+        <!-- Contacts Containers -->
         <div class="max-h-full overflow-auto">
           <div
             class="flex justify-between align-middle p-4 hover:bg-slate-400 cursor-pointer transition-all duration-150"
