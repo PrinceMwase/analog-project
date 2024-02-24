@@ -1,9 +1,9 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule, NgOptimizedImage } from '@angular/common';
-import { ConversationList, Conversation } from '../../interfaces/IConversation';
+import { ConversationList, Conversation } from '../../../interfaces/IConversation';
 import { Output, EventEmitter } from '@angular/core';
 import * as moment from 'moment';
-import { Contact } from '../../interfaces/ICustomer';
+import { Contact } from '../../../interfaces/ICustomer';
 
 @Component({
   imports: [CommonModule, NgOptimizedImage],

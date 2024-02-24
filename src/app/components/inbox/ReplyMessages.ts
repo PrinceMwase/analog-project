@@ -11,13 +11,13 @@ import { CommonModule, NgOptimizedImage } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule, NgForm } from '@angular/forms';
 import { Router } from '@angular/router';
-import { RxStompService } from '../../../src/app/rx-stomp.service';
+import { RxStompService } from '../../rx-stomp.service';
 import { Message } from '@stomp/stompjs';
 
-import { rxStompServiceFactory } from '../../../src/app/rx-stomp-service-factory';
+import { rxStompServiceFactory } from '../../rx-stomp-service-factory';
 import { Subscription, mergeMap } from 'rxjs';
-import { SendIconComponent } from '../icons/SendIcon';
-import { ToastrService } from 'ngx-toastr';
+import { SendIconComponent } from '../../../components/icons/SendIcon';
+import { ToastContainerDirective, ToastrService } from 'ngx-toastr';
 
 @Component({
   imports: [CommonModule, NgOptimizedImage, FormsModule, SendIconComponent],
@@ -29,7 +29,6 @@ import { ToastrService } from 'ngx-toastr';
       useFactory: rxStompServiceFactory,
     },
   ],
-  changeDetection: ChangeDetectionStrategy.Default,
   template: `
     <div class="flex flex-col min-h-full relative">
       <!-- First Message -->
@@ -50,6 +49,7 @@ import { ToastrService } from 'ngx-toastr';
         <div class="truncate text-sm font-thin text-gray-400">
           {{ getDate(thisConversation.created_at) }}
         </div>
+        <div aria-live="polite" toastContainer></div>
       </div>
 
       <!-- Chats -->
@@ -123,7 +123,7 @@ import { ToastrService } from 'ngx-toastr';
               class="grow w-full border-b-2 border-black bg-white"
             />
 
-            <button class="font-bold"><send-icon></send-icon> </button>
+            <button class="font-bold"><send-icon></send-icon></button>
           </div>
         </form>
       </div>
@@ -193,6 +193,9 @@ export class ReplyMessagesComponent implements OnInit {
   };
   conversationParts: ConversationPart[] = [];
 
+  @ViewChild(ToastContainerDirective, { static: true })
+  toastContainer: ToastContainerDirective | undefined;
+
   // @ts-ignore, to suppress warning related to being undefined
   private topicSubscription: Subscription;
 
@@ -200,12 +203,13 @@ export class ReplyMessagesComponent implements OnInit {
     private httpClient: HttpClient,
     private router: Router,
     private stomp: RxStompService,
-    private cdr: ChangeDetectorRef,
     private toastr: ToastrService
   ) {}
   ngOnInit(): void {
     // watching for received messages
+    this.toastr.overlayContainer = this.toastContainer;
 
+    setTimeout(() => this.toastr.success('sup'));
     // Make an HTTP request to your API endpoint
     const reqSingleConversation = this.httpClient.get<any>(
       `http://localhost:8080/getAdminConversation?id=${this.conversationId}`
@@ -224,36 +228,55 @@ export class ReplyMessagesComponent implements OnInit {
           );
         })
       )
-      .subscribe((message: any) => {
-        // Parse Message object
-        const newConversationUpdate: SingleConversation = JSON.parse(
-          message.body
-        ).item;
+      .subscribe({
+        next: (message: any) => {
+          // Parse Message object
+          const newConversationUpdate: SingleConversation = JSON.parse(
+            message.body
+          ).item;
 
-        // Update Conversation part
-        this.conversationParts = [
-          ...this.conversationParts,
-          ...newConversationUpdate.conversation_parts.conversation_parts,
-        ];
-        // Trigger change detection manually
-        this.showNewMessage();
-        this.cdr.detectChanges();
+          // Update Conversation part
+          this.conversationParts = [
+            ...this.conversationParts,
+            ...newConversationUpdate.conversation_parts.conversation_parts,
+          ];
+
+          this.showNewMessage();
+          
+          // Trigger change detection manually
+        },
+        complete:()=>{
+          console.log("completed the subscription");
+          
+          this.showNewMessage();
+        }
       });
   }
 
-  // Track function avoids re-rendering 
+  // Track function avoids re-rendering
   trackConversation(index: any, conversation: any) {
     return conversation.id;
   }
 
-
   showNewMessage() {
-    this.toastr.success('New Message', 'Notification', {
-      tapToDismiss: false,
-      enableHtml: true,
-      closeButton:true,
-
-    });
+    this.toastr
+      .success('New Message', 'Notification', {
+        tapToDismiss: true,
+        enableHtml: true,
+        closeButton: true,
+        timeOut: 5000,
+        extendedTimeOut: 5000,
+      })
+      .onShown.subscribe(() => {
+        console.log('shown');
+        this.toastr.success('New Message', 'Notification', {
+          tapToDismiss: true,
+          enableHtml: true,
+          closeButton: true,
+          timeOut: 5000,
+          extendedTimeOut: 5000,
+        });
+      });
   }
 
   // stop the watch

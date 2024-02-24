@@ -5,10 +5,10 @@ import { ChatIconComponent } from '../../../../components/icons/ChatIcon';
 import { AddIconComponent } from '../../../../components/icons/AddIcon';
 import { CallIconComponent } from '../../../../components/icons/CallIcon';
 import * as moment from 'moment';
-import { ChatMessagesComponent } from '../../../../components/inbox/ChatMessages';
+import { ChatMessagesComponent } from '../../../components/inbox/ChatMessages';
 import { Contact, CustomerList } from '../../../../interfaces/ICustomer';
 import { ConversationList } from '../../../../interfaces/IConversation';
-import { ReplyMessagesComponent } from '../../../../components/inbox/ReplyMessages';
+import { ReplyMessagesComponent } from '../../../components/inbox/ReplyMessages';
 
 export type ContactType = {
   name: string;
